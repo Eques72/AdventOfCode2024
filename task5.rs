@@ -39,12 +39,14 @@ fn read_file(pairs: &mut Vec<(i32, i32)>, lists: &mut Vec<Vec<i32>>) -> io::Resu
 
 fn main() -> io::Result<()>
 {
+    let part = 2;
     let mut pairs: Vec<(i32, i32)> = Vec::new();
     let mut lists: Vec<Vec<i32>> = Vec::new();
 
     read_file(&mut pairs, &mut lists)?;
 
     let mut correct_pages: Vec<Vec<i32>> = Vec::new();
+    let mut incorrect_pages: Vec<Vec<i32>> = Vec::new();
     'pages: for list in &lists {
         for i in 0..list.len() {
             //each number must be checked to fulfill every rule that concerns it (is a first number in the pair)
@@ -57,6 +59,7 @@ fn main() -> io::Result<()>
                         if list[j] == *r
                         {
                             println!("Not correct! {:?} by rule {:?} | {:?}", list, *l, *r);
+                            incorrect_pages.push(list.clone());
                             continue 'pages;
                         }
                     }
@@ -67,7 +70,9 @@ fn main() -> io::Result<()>
     }
     println!("lists len: {:?}", lists.len());
     println!("correct_pages len: {:?}", correct_pages.len());
+    println!("incorrect_pages len: {:?}", incorrect_pages.len());
 
+    if part == 1{
     let mut sum_of_middle_vals = 0;
     for list in &correct_pages 
     {
@@ -75,5 +80,47 @@ fn main() -> io::Result<()>
         sum_of_middle_vals += list[(list.len()-1)/2];
     }
     println!("sum_of_middle_vals: {:?}", sum_of_middle_vals);
+    }
+    if part == 2{
+        for list in &mut incorrect_pages {
+            let mut i = 0;
+            while i < list.len() {
+                let mut restart = false;
+                for (l, r) in &pairs 
+                {
+                    if *l == list[i]
+                    {
+                        for j in 0..i 
+                        {
+                            if list[j] == *r
+                            {
+                                // println!("Not correct! {:?} by rule {:?} | {:?}", list, *l, *r);
+                                let temp = list[i];
+                                list[i] = list[j];
+                                list[j] = temp;
+                                restart = true;
+                            }
+                        }
+                    }
+                }
+                if restart {
+                    i = 0;
+                } else {
+                    i += 1;
+                }
+            }
+        }
+        let mut sum_of_middle_vals = 0;
+        for list in &incorrect_pages 
+        {
+            for val in list {
+                print!("{}, ", val);
+            }
+            println!("",);
+            println!("index: {:?}, len {:?}, value {:?}", (list.len()-1)/2,list.len(), list[(list.len()-1)/2]);
+            sum_of_middle_vals += list[(list.len()-1)/2];
+        }
+        println!("sum_of_middle_vals: {:?}", sum_of_middle_vals);
+    }
     Ok(())
 }
