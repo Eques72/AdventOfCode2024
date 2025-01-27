@@ -1,7 +1,8 @@
 use std::fs::File;
 use std::io::{self, BufRead, BufReader};
+use std::collections::HashMap;
 
-fn read_file() -> io::Result<Vec<Vec<char>>> {
+fn read_file() -> io::Result<Vec<i128>> {
     let file_path = "input_task_11.txt";
     let file = File::open(file_path)?;
     let mut reader = BufReader::new(file);
@@ -9,109 +10,109 @@ fn read_file() -> io::Result<Vec<Vec<char>>> {
     let mut line = String::new();
     reader.read_line(&mut line)?;
 
-    let vector: Vec<Vec<char>> = line
-        .trim()
-        .split_whitespace()
-        .map(|stone| stone.chars().collect())
-        .collect();
-    Ok(vector)
+    let mut vec = Vec::new();
+
+    vec.extend(line.split_whitespace()
+        .filter_map(|s| s.parse::<i128>().ok()));
+    
+    Ok(vec)
 }
 
-fn vec_of_chars_to_int(chars: Vec<char>) -> i64 
-{
-    let num_str: String = chars.into_iter().collect();    
-    return num_str.parse::<i64>().expect("REASON");
+fn count_digits(integer: i128) -> usize {
+    let mut count = 0;
+    let mut num = integer;
+    while num > 0 {
+        num /= 10;
+        count += 1;
+    }
+    return count;
 }
 
-fn int_to_vec_of_chars(integer: i64) -> Vec<char> 
-{
-    return integer.to_string().chars().collect();
-}
+// // If the stone is engraved with the number 0, it is replaced by a stone engraved with the number 1.
+// // If the stone is engraved with a number that has an even number of digits, it is replaced by two stones. The left half of the digits are engraved on the new left stone, and the right half of the digits are engraved on the new right stone. (The new numbers don't keep extra leading zeroes: 1000 would become stones 10 and 0.)
+// // If none of the other rules apply, the stone is replaced by a new stone; the old stone's number multiplied by 2024 is engraved on the new stone.
 
-// If the stone is engraved with the number 0, it is replaced by a stone engraved with the number 1.
-// If the stone is engraved with a number that has an even number of digits, it is replaced by two stones. The left half of the digits are engraved on the new left stone, and the right half of the digits are engraved on the new right stone. (The new numbers don't keep extra leading zeroes: 1000 would become stones 10 and 0.)
-// If none of the other rules apply, the stone is replaced by a new stone; the old stone's number multiplied by 2024 is engraved on the new stone.
-
-fn apply_rule_1(stone: &mut Vec<char>) -> bool
+fn split_number_on_half_cache(integer: i128, threshold: usize) -> (i128, i128) 
 {
-    if stone.len() == 1 && stone[0] == '0'
+    let divisor = 10_i128.pow((threshold) as u32);
+    return (integer / divisor, integer % divisor);
+ }
+
+fn apply_rule_1_cache(stone: i128, cache: &mut HashMap<i128, i128>, old_cache: &HashMap<i128, i128>) -> bool
+{
+    if stone == 0
     {
-        stone[0] = '1';
+        *cache.entry(1).or_insert(0) += old_cache[&0];
         return true;
     }
     return false;
 }
 
-fn apply_rule_2(stone: &mut Vec<char>) -> Vec<char>
+fn apply_rule_2_cache(stone: i128, cache: &mut HashMap<i128, i128>, old_cache: &HashMap<i128, i128>) -> bool
 {
-    if stone.len() % 2 == 0
+    let threshold = count_digits(stone);
+    if threshold % 2 == 0
     {
-        let mut new_stone = stone.split_off(stone.len() / 2);
-        while new_stone.len() > 1 && new_stone[0] == '0'
-        {
-            new_stone.remove(0);
-        }
-        return new_stone
+        let stones_lr = split_number_on_half_cache(stone, threshold/2);
+        *cache.entry(stones_lr.0).or_insert(0) += old_cache[&stone];
+        *cache.entry(stones_lr.1).or_insert(0) += old_cache[&stone];
+        return true;
     }
-    return Vec::<char>::new();
+    return false;
 }
 
-fn apply_rule_3(stone: &mut Vec<char>)
+fn apply_rule_3_cache(stone: i128, cache: &mut HashMap<i128, i128>, old_cache: &HashMap<i128, i128>)
 {
-    let mut int: i64 = vec_of_chars_to_int(stone.clone());
-    int *= 2024;
-    stone.clear();
-    stone.extend(int_to_vec_of_chars(int));
+    *cache.entry(stone * 2024).or_insert(0) += old_cache[&stone];
+}
+
+fn print_stones_map(stones_map: HashMap<i128,i128>)
+{
+    for (s, v) in stones_map
+    {
+        println!("Stone of number {:?} exists {:?} times", s, v);
+    }
+    println!();
 }
 
 fn main() -> io::Result<()>
 {
-    let is_part_one = true;
-    let mut stones = read_file().unwrap();
+    let stones = read_file().unwrap();
 
-    println!("{:?}", stones[0]);
-    println!("{:?}", stones[0][0]);
+    let mut cache_multi = HashMap::<i128,i128>::new();
 
-    let number_of_blinks = 25;
+    println!("{:?}", stones);
+
+    let number_of_blinks = 75;
+
+    for stone in stones
+    {
+        cache_multi.insert(stone, 1);
+    }
+
+    print_stones_map(cache_multi.clone());
 
     for _i in 0..number_of_blinks
     {
-        let mut stones_to_insert = Vec::new();
-        let mut line_len = stones.len();
-        for j in 0..line_len
+        let mut new_cache = HashMap::<i128,i128>::new();
+        for (stone, _n_o_s) in &cache_multi
         {
-            if !apply_rule_1(&mut stones[j])
+            if !apply_rule_1_cache(*stone, &mut new_cache, &cache_multi)
             {
-                let new_stone = apply_rule_2(&mut stones[j]);
-                if new_stone.len() != 0
+                if !apply_rule_2_cache(*stone, &mut new_cache, &cache_multi)
                 {
-                    stones_to_insert.push((new_stone, j+1))
-                }
-                else
-                {
-                    apply_rule_3(&mut stones[j]);
+                    apply_rule_3_cache(*stone, &mut new_cache, &cache_multi);
                 }
             }
         }
-        let mut stones_inserted: usize = 0;
-        for new_stone in stones_to_insert
-        {
-            stones.insert(new_stone.1+stones_inserted, new_stone.0);
-            stones_inserted += 1;
-        }
-
-        line_len = stones.len();
-        println!("LEN: {:?}", line_len);
-
-        // for s in stones.clone()
-        // {
-        //     for (i, &ch) in s.iter().enumerate() {
-        //         print!("{}", ch);
-        //     }
-        //     print!(" ");
-        // }
-        // println!();
+        cache_multi = new_cache;
     }
+    let mut total: i128 = 0;
+    for (_stone, n_o_s) in &cache_multi
+    {
+        total += n_o_s;
+    }
+    println!("TOTAL {:?}", total);
 
     Ok(())
 }
