@@ -2,3 +2,6 @@
 *.code-workspace
 *.pdb
 *.exe
+/target
+*.lock
+*.toml
