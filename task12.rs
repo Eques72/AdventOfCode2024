@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 
 #[derive(Eq, Hash, PartialEq, Clone, Copy, Debug)]
-enum Direction
+enum Face
 {
     W,
     E,                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     
@@ -13,11 +13,6 @@ enum Direction
     N,
     NONE,
 }
-// struct Side
-// {
-//     direction: Direction,
-//     position: i32,
-// }
 
 fn read_file(rows: &mut Vec<Vec<char>>) -> io::Result<()> 
 {
@@ -128,20 +123,20 @@ fn measure_plots(field: &Vec<Vec<char>>, row: usize, col: usize, checked_plots: 
     (area, perimeter)
 }
 
-fn create_line(field: &Vec<Vec<char>>, row: usize, col: usize, direction: Direction) -> ((usize,usize),(usize,usize), Direction)
+fn create_line(field: &Vec<Vec<char>>, row: usize, col: usize, face: Face) -> ((usize,usize),(usize,usize), Face)
 {
     //line has start, and end
-    if direction == Direction::W || direction == Direction::E
+    if face == Face::W || face == Face::E
     {
         let mut length_to_right = 0;
         let mut length_to_left = 0;
         while row+length_to_right < field.len() - 1 && field[row+length_to_right][col] == field[row][col]
         {
-            if direction == Direction::W && col > 0 && field[row+length_to_right][col-1] == field[row][col]
+            if face == Face::W && col > 0 && field[row+length_to_right][col-1] == field[row][col]
             {
                 break;
             }
-            if direction == Direction::E && col < field[0].len() - 1 && field[row+length_to_right][col+1] == field[row][col]
+            if face == Face::E && col < field[0].len() - 1 && field[row+length_to_right][col+1] == field[row][col]
             {
                 break;
             }
@@ -149,17 +144,17 @@ fn create_line(field: &Vec<Vec<char>>, row: usize, col: usize, direction: Direct
         }
         while row-length_to_left > 0 && field[row-length_to_left][col] == field[row][col]
         {
-            if direction == Direction::W && col > 0 && field[row-length_to_left][col-1] == field[row][col]
+            if face == Face::W && col > 0 && field[row-length_to_left][col-1] == field[row][col]
             {
                 break;
             }
-            if direction == Direction::E && col < field[0].len() - 1 && field[row-length_to_left][col+1] == field[row][col]
+            if face == Face::E && col < field[0].len() - 1 && field[row-length_to_left][col+1] == field[row][col]
             {
                 break;
             }
             length_to_left += 1;
         }
-        ((row-length_to_left,col),(row+length_to_right, col), direction)
+        ((row-length_to_left,col),(row+length_to_right, col), face)
     } 
     else
     {
@@ -167,11 +162,11 @@ fn create_line(field: &Vec<Vec<char>>, row: usize, col: usize, direction: Direct
         let mut length_to_up = 0;
         while col+length_to_down < field[0].len() - 1 && field[row][col+length_to_down] == field[row][col]
         {
-            if direction == Direction::N && row > 0 && field[row-1][col+length_to_down] == field[row][col]
+            if face == Face::N && row > 0 && field[row-1][col+length_to_down] == field[row][col]
             {
                 break;
             }
-            if direction == Direction::S && row < field.len() - 1 && field[row+1][col+length_to_down] == field[row][col]
+            if face == Face::S && row < field.len() - 1 && field[row+1][col+length_to_down] == field[row][col]
             {
                 break;
             }
@@ -179,50 +174,49 @@ fn create_line(field: &Vec<Vec<char>>, row: usize, col: usize, direction: Direct
         }
         while col-length_to_up > 0 && field[row][col-length_to_up] == field[row][col]
         {
-            if direction == Direction::N && row > 0 && field[row-1][col-length_to_up] == field[row][col]
+            if face == Face::N && row > 0 && field[row-1][col-length_to_up] == field[row][col]
             {
                 break;
             }
-            if direction == Direction::S && row < field.len() - 1 && field[row+1][col-length_to_up] == field[row][col]
+            if face == Face::S && row < field.len() - 1 && field[row+1][col-length_to_up] == field[row][col]
             {
                 break;
             }
             length_to_up += 1;
         }
-        ((row,col-length_to_up),(row, col+length_to_down), direction)
+        ((row,col-length_to_up),(row, col+length_to_down), face)
     }
 }
 
-fn check_surroundings(field: &Vec<Vec<char>>, row: usize, col: usize) -> (Direction,Direction,Direction,Direction)
+fn check_surroundings(field: &Vec<Vec<char>>, row: usize, col: usize) -> (Face,Face,Face,Face)
 {
     //N S W E
-    let mut surroundings = (Direction::NONE, Direction::NONE, Direction::NONE, Direction::NONE);
+    let mut surroundings = (Face::NONE, Face::NONE, Face::NONE, Face::NONE);
 
     if row == 0 || (row > 0 && field[row-1][col] != field[row][col])
     {
-        surroundings.0 = Direction::N;
+        surroundings.0 = Face::N;
     }
     if row == field.len() -1 || (row < field.len() - 1 && field[row+1][col] != field[row][col])
     {
-        surroundings.1 = Direction::S;
+        surroundings.1 = Face::S;
     }
     if col == 0 || (col > 0 && field[row][col-1] != field[row][col])
     {
-        surroundings.2 = Direction::W;
+        surroundings.2 = Face::W;
     }
     if col == field[0].len() -1 || (col < field[row].len() - 1 && field[row][col+1] != field[row][col])
     {
-        surroundings.3 = Direction::E;
+        surroundings.3 = Face::E;
     }
     return surroundings; 
 }
 
-//a plot must have a context of its neighbour (predecesor)
 fn measure_plots_2(field: &Vec<Vec<char>>, 
     row: usize, col: usize, 
     checked_plots: &mut HashSet<(usize, usize)>,
-    predecessor_fences: (Direction,Direction,Direction, Direction),
-    lines: &mut HashSet<((usize, usize),(usize, usize), Direction)>
+    predecessor_fences: (Face,Face,Face, Face),
+    lines: &mut HashSet<((usize, usize),(usize, usize), Face)>
     ) -> (i32, i32)
 {
     if checked_plots.contains(&(row, col))
@@ -236,154 +230,74 @@ fn measure_plots_2(field: &Vec<Vec<char>>,
 
     let surroundings = check_surroundings(field, row, col);
     
-    if surroundings.0 == Direction::N && predecessor_fences.0 == Direction::NONE
+    if surroundings.0 == Face::N && predecessor_fences.0 == Face::NONE
     {
-        //if none of W E neighbours was checked before and have this border
-        if !(surroundings.2 == Direction::NONE && checked_plots.contains(&(row, col-1)) && check_surroundings(field, row, col-1).0 == Direction::N)
-        && !(surroundings.3 == Direction::NONE && checked_plots.contains(&(row, col+1)) && check_surroundings(field, row, col+1).0 == Direction::N)         
+        if !(surroundings.2 == Face::NONE && checked_plots.contains(&(row, col-1)) && check_surroundings(field, row, col-1).0 == Face::N)
+        && !(surroundings.3 == Face::NONE && checked_plots.contains(&(row, col+1)) && check_surroundings(field, row, col+1).0 == Face::N)         
             {
                 perimeter += 1;
-                lines.insert(create_line(field, row, col, Direction::N));
-                println!("perimeter Added to {:?} at {:?}:{:?}, direction {:?}", field[row][col], row , col, surroundings.0 )
+                lines.insert(create_line(field, row, col, Face::N));
             }
     }
-    if surroundings.1 == Direction::S && predecessor_fences.1 == Direction::NONE
+    if surroundings.1 == Face::S && predecessor_fences.1 == Face::NONE
     {
-        if !(surroundings.2 == Direction::NONE && checked_plots.contains(&(row, col-1)) && check_surroundings(field, row, col-1).1 == Direction::S)
-        && !(surroundings.3 == Direction::NONE && checked_plots.contains(&(row, col+1)) && check_surroundings(field, row, col+1).1 == Direction::S)         
+        if !(surroundings.2 == Face::NONE && checked_plots.contains(&(row, col-1)) && check_surroundings(field, row, col-1).1 == Face::S)
+        && !(surroundings.3 == Face::NONE && checked_plots.contains(&(row, col+1)) && check_surroundings(field, row, col+1).1 == Face::S)         
         {
             perimeter += 1;
-            lines.insert(create_line(field, row, col, Direction::S));
-            println!("perimeter Added to {:?} at {:?}:{:?}, direction {:?}", field[row][col], row , col, surroundings.1 )
+            lines.insert(create_line(field, row, col, Face::S));
         }
     }
-    if surroundings.2 == Direction::W && predecessor_fences.2 == Direction::NONE
+    if surroundings.2 == Face::W && predecessor_fences.2 == Face::NONE
     {
-        if !(surroundings.0 == Direction::NONE && checked_plots.contains(&(row-1, col)) && check_surroundings(field, row-1, col).2 == Direction::W)
-        && !(surroundings.1 == Direction::NONE && checked_plots.contains(&(row+1, col)) && check_surroundings(field, row+1, col).2 == Direction::W)         
+        if !(surroundings.0 == Face::NONE && checked_plots.contains(&(row-1, col)) && check_surroundings(field, row-1, col).2 == Face::W)
+        && !(surroundings.1 == Face::NONE && checked_plots.contains(&(row+1, col)) && check_surroundings(field, row+1, col).2 == Face::W)         
         {
             perimeter += 1;
-            lines.insert(create_line(field, row, col, Direction::W));
-            println!("perimeter Added to {:?} at {:?}:{:?}, direction {:?}", field[row][col], row , col, surroundings.2 )
+            lines.insert(create_line(field, row, col, Face::W));
         }
     }
-    if surroundings.3 == Direction::E && predecessor_fences.3 == Direction::NONE
+    if surroundings.3 == Face::E && predecessor_fences.3 == Face::NONE
     {
-        if !(surroundings.0 == Direction::NONE && checked_plots.contains(&(row-1, col)) && check_surroundings(field, row-1, col).3 == Direction::E)
-        && !(surroundings.1 == Direction::NONE && checked_plots.contains(&(row+1, col)) && check_surroundings(field, row+1, col).3 == Direction::E)         
+        if !(surroundings.0 == Face::NONE && checked_plots.contains(&(row-1, col)) && check_surroundings(field, row-1, col).3 == Face::E)
+        && !(surroundings.1 == Face::NONE && checked_plots.contains(&(row+1, col)) && check_surroundings(field, row+1, col).3 == Face::E)         
         {
             perimeter += 1;
-            lines.insert(create_line(field, row, col, Direction::E));
-            println!("perimeter Added to {:?} at {:?}:{:?}, direction {:?}", field[row][col], row , col, surroundings.3 )
+            lines.insert(create_line(field, row, col, Face::E));
         }
     }
 
-    if surroundings.0 == Direction::NONE
+    if surroundings.0 == Face::NONE
     {
-        //we can go up, passing W E
+        //can go up, passing W E
         let res =measure_plots_2(field, row-1, col, checked_plots, surroundings, lines);
         area += res.0;
         perimeter += res.1;
     }
-    if surroundings.1 == Direction::NONE
+    if surroundings.1 == Face::NONE
     {
-        //we can go down, passing W E
+        //can go down, passing W E
         let res = measure_plots_2(field, row+1, col, checked_plots, surroundings, lines);
         area += res.0;
         perimeter += res.1;
     } 
-    if surroundings.2 == Direction::NONE
+    if surroundings.2 == Face::NONE
     {
-        //we can go left, passing N S
+        //can go left, passing N S
         let res = measure_plots_2(field, row, col-1, checked_plots, surroundings, lines);
         area += res.0;
         perimeter += res.1;
     }
-    if surroundings.3 == Direction::NONE
+    if surroundings.3 == Face::NONE
     {
-        //we can go right, passing N S
+        //can go right, passing N S
         let res= measure_plots_2(field, row, col+1, checked_plots, surroundings, lines);
         area += res.0;
         perimeter += res.1;
     } 
-    // if col < field[row].len() - 1 && field[row][col+1] == char_field
-    // {
-    //     let res: (i32,i32) = measure_plots_2(field, row, col+1, checked_plots, lines);
-    //     area += res.0;
-    //     perimeter += res.1;
-    // }
-    // else
-    // {
-    //     // perimeter += 1;    
-    //     lines.insert((Direction::E, col));
-    // }
 
     (area, perimeter)
 }
-
-
-// fn measure_plots_2(field: &Vec<Vec<char>>, row: usize, col: usize, checked_plots: &mut HashSet<(usize, usize)>, lines: &mut HashSet<(Direction, usize)>) -> (i32, i32)
-// {
-//     if checked_plots.contains(&(row, col))
-//     {
-//         return (0,0)
-//     }
-//     checked_plots.insert((row, col));
-
-//     let char_field: char = field[row][col];
-//     let mut area: i32 = 1;
-//     let mut perimeter: i32 = 0;
-
-//     if row > 0 && field[row-1][col] == char_field
-//     {
-//         let res: (i32,i32) = measure_plots_2(field, row-1, col, checked_plots, lines);
-//         area += res.0;
-//         perimeter += res.1;
-//     }
-//     else
-//     {
-//         // perimeter += 1;    
-//         lines.insert((Direction::N, row));
-//     }
-
-//     if row < field.len() - 1 && field[row+1][col] == char_field
-//     {
-//         let res: (i32,i32) = measure_plots_2(field, row+1, col, checked_plots, lines);
-//         area += res.0;
-//         perimeter += res.1;
-//     }
-//     else
-//     {
-//         // perimeter += 1;    
-//         lines.insert((Direction::S, row));
-//     }
-
-//     if col > 0 && field[row][col-1] == char_field
-//     {
-//         let res: (i32,i32) = measure_plots_2(field, row, col-1, checked_plots, lines);
-//         area += res.0;
-//         perimeter += res.1;
-//     }
-//     else
-//     {
-//         // perimeter += 1;    
-//         lines.insert((Direction::W, col));
-//     }
-
-//     if col < field[row].len() - 1 && field[row][col+1] == char_field
-//     {
-//         let res: (i32,i32) = measure_plots_2(field, row, col+1, checked_plots, lines);
-//         area += res.0;
-//         perimeter += res.1;
-//     }
-//     else
-//     {
-//         // perimeter += 1;    
-//         lines.insert((Direction::E, col));
-//     }
-
-//     (area, perimeter)
-// }
 
 fn main() -> io::Result<()>
 {
@@ -402,11 +316,7 @@ fn main() -> io::Result<()>
             for (col, _plot) in row_data.iter().enumerate() 
             {
                 let res: (i32,i32) = measure_plots(&field, row, col, &mut checked_plots);
-                costs += res.0 * res.1;
-                // if res.0 != 0
-                // {
-                //     println!("Cost of one field {:?}", res.0 * res.1)
-                // }            
+                costs += res.0 * res.1;        
             }
         }
         println!("Total costs: {:?}", costs);
@@ -414,29 +324,20 @@ fn main() -> io::Result<()>
     else
     {
         let mut checked_plots: HashSet<(usize, usize)> = HashSet::new();
-        let mut costs: i32 = 0;
         let mut costs_l: i32 = 0;
         for (row, row_data) in field.iter().enumerate() 
         {
             for (col, _plot) in row_data.iter().enumerate() 
             {
-                // let mut lines: HashSet<(Direction, usize)> = HashSet::new();
-                let mut lines: HashSet<((usize, usize),(usize, usize), Direction)> = HashSet::new();
-                let res: (i32,i32) = measure_plots_2(&field, row, col, &mut checked_plots, (Direction::NONE,Direction::NONE,Direction::NONE,Direction::NONE,), &mut lines);
-                costs += res.0 * res.1;
+                let mut lines: HashSet<((usize, usize),(usize, usize), Face)> = HashSet::new();
+                let res: (i32,i32) = measure_plots_2(&field, row, col, &mut checked_plots, (Face::NONE,Face::NONE,Face::NONE,Face::NONE,), &mut lines);
                 costs_l += res.0 * lines.len() as i32;
                 if res.0 != 0
                 {
-                    // println!("Cost of one field of type {:?} :{:?}, area {:?}, sides {:?}", field[row][col], res.0 * res.1 , res.0, res.1 );
                     println!("Cost of one field of type {:?} :{:?}, area {:?}, sides {:?}", field[row][col], res.0 * lines.len() as i32 , res.0, lines.len());
-                    for eem in lines
-                    {
-                        println!("{:?}", eem)
-                    }
                 }
             }
         }
-        println!("Total costs: {:?}", costs);
         println!("Total costs: {:?}", costs_l);
     }
 
